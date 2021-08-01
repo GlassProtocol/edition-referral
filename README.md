@@ -8,7 +8,7 @@
 
   
 ## Automated Testing
-[![CircleCI](https://circleci.com/gh/GlassProtocol/contracts/tree/main.svg?style=svg&circle-token=9e5e43205fed479138523fb2cfea55e47555321c)](https://circleci.com/gh/GlassProtocol/contracts/?branch=main)   
+[![CircleCI](https://circleci.com/gh/GlassProtocol/edition-referral/tree/main.svg?style=svg&circle-token=9e5e43205fed479138523fb2cfea55e47555321c)](https://circleci.com/gh/GlassProtocol/edition-referral/?branch=main)   
 
 ---
 
