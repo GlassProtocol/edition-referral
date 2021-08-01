@@ -15,7 +15,9 @@
     "deploy:rinkeby": "hardhat run --network rinkeby scripts/deploy.ts",
     "deploy:mainnet": "hardhat run --network mainnet scripts/deploy.ts"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.2.0"
+  },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-solhint": "^2.0.0",

@@ -20,13 +20,13 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
-interface EditionsInterface extends ethers.utils.Interface {
+interface ReferralEditionsInterface extends ethers.utils.Interface {
   functions: {
     "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
-    "buyEdition(uint256)": FunctionFragment;
+    "buyEdition(uint256,address)": FunctionFragment;
     "contractURI()": FunctionFragment;
-    "createEdition(uint256,uint256,address)": FunctionFragment;
+    "createEdition(uint256,uint256,uint256,address)": FunctionFragment;
     "editions(uint256)": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
     "isApprovedForAll(address,address)": FunctionFragment;
@@ -39,7 +39,8 @@ interface EditionsInterface extends ethers.utils.Interface {
     "tokenToEdition(uint256)": FunctionFragment;
     "tokenURI(uint256)": FunctionFragment;
     "transferFrom(address,address,uint256)": FunctionFragment;
-    "withdrawFunds(uint256)": FunctionFragment;
+    "withdraw()": FunctionFragment;
+    "withdrawFor(address)": FunctionFragment;
     "withdrawnForEdition(uint256)": FunctionFragment;
   };
 
@@ -50,7 +51,7 @@ interface EditionsInterface extends ethers.utils.Interface {
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(
     functionFragment: "buyEdition",
-    values: [BigNumberish]
+    values: [BigNumberish, string]
   ): string;
   encodeFunctionData(
     functionFragment: "contractURI",
@@ -58,7 +59,7 @@ interface EditionsInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "createEdition",
-    values: [BigNumberish, BigNumberish, string]
+    values: [BigNumberish, BigNumberish, BigNumberish, string]
   ): string;
   encodeFunctionData(
     functionFragment: "editions",
@@ -102,10 +103,8 @@ interface EditionsInterface extends ethers.utils.Interface {
     functionFragment: "transferFrom",
     values: [string, string, BigNumberish]
   ): string;
-  encodeFunctionData(
-    functionFragment: "withdrawFunds",
-    values: [BigNumberish]
-  ): string;
+  encodeFunctionData(functionFragment: "withdraw", values?: undefined): string;
+  encodeFunctionData(functionFragment: "withdrawFor", values: [string]): string;
   encodeFunctionData(
     functionFragment: "withdrawnForEdition",
     values: [BigNumberish]
@@ -155,8 +154,9 @@ interface EditionsInterface extends ethers.utils.Interface {
     functionFragment: "transferFrom",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "withdrawFunds",
+    functionFragment: "withdrawFor",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -167,9 +167,11 @@ interface EditionsInterface extends ethers.utils.Interface {
   events: {
     "Approval(address,address,uint256)": EventFragment;
     "ApprovalForAll(address,address,bool)": EventFragment;
-    "EditionCreated(uint256,uint256,address,uint256)": EventFragment;
-    "EditionPurchased(uint256,uint256,uint256,address)": EventFragment;
+    "EditionCreated(uint256,uint256,uint256,address,uint256)": EventFragment;
+    "EditionPurchased(uint256,uint256,uint256,address,address)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
+    "WithdrawPending(address,uint256)": EventFragment;
+    "Withdrawal(address,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
@@ -177,9 +179,11 @@ interface EditionsInterface extends ethers.utils.Interface {
   getEvent(nameOrSignatureOrTopic: "EditionCreated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "EditionPurchased"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "WithdrawPending"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Withdrawal"): EventFragment;
 }
 
-export class Editions extends BaseContract {
+export class ReferralEditions extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -220,7 +224,7 @@ export class Editions extends BaseContract {
     toBlock?: string | number | undefined
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
-  interface: EditionsInterface;
+  interface: ReferralEditionsInterface;
 
   functions: {
     approve(
@@ -233,6 +237,7 @@ export class Editions extends BaseContract {
 
     buyEdition(
       editionId: BigNumberish,
+      curator: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -241,6 +246,7 @@ export class Editions extends BaseContract {
     createEdition(
       quantity: BigNumberish,
       price: BigNumberish,
+      commissionPrice: BigNumberish,
       fundingRecipient: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -249,9 +255,10 @@ export class Editions extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, string, BigNumber] & {
+      [BigNumber, BigNumber, BigNumber, string, BigNumber] & {
         quantity: BigNumber;
         price: BigNumber;
+        commissionPrice: BigNumber;
         fundingRecipient: string;
         numSold: BigNumber;
       }
@@ -320,8 +327,12 @@ export class Editions extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    withdrawFunds(
-      editionId: BigNumberish,
+    withdraw(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    withdrawFor(
+      user: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -341,6 +352,7 @@ export class Editions extends BaseContract {
 
   buyEdition(
     editionId: BigNumberish,
+    curator: string,
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -349,6 +361,7 @@ export class Editions extends BaseContract {
   createEdition(
     quantity: BigNumberish,
     price: BigNumberish,
+    commissionPrice: BigNumberish,
     fundingRecipient: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
@@ -357,9 +370,10 @@ export class Editions extends BaseContract {
     arg0: BigNumberish,
     overrides?: CallOverrides
   ): Promise<
-    [BigNumber, BigNumber, string, BigNumber] & {
+    [BigNumber, BigNumber, BigNumber, string, BigNumber] & {
       quantity: BigNumber;
       price: BigNumber;
+      commissionPrice: BigNumber;
       fundingRecipient: string;
       numSold: BigNumber;
     }
@@ -422,8 +436,12 @@ export class Editions extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  withdrawFunds(
-    editionId: BigNumberish,
+  withdraw(
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  withdrawFor(
+    user: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -443,6 +461,7 @@ export class Editions extends BaseContract {
 
     buyEdition(
       editionId: BigNumberish,
+      curator: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -451,6 +470,7 @@ export class Editions extends BaseContract {
     createEdition(
       quantity: BigNumberish,
       price: BigNumberish,
+      commissionPrice: BigNumberish,
       fundingRecipient: string,
       overrides?: CallOverrides
     ): Promise<void>;
@@ -459,9 +479,10 @@ export class Editions extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, string, BigNumber] & {
+      [BigNumber, BigNumber, BigNumber, string, BigNumber] & {
         quantity: BigNumber;
         price: BigNumber;
+        commissionPrice: BigNumber;
         fundingRecipient: string;
         numSold: BigNumber;
       }
@@ -524,10 +545,9 @@ export class Editions extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    withdrawFunds(
-      editionId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    withdraw(overrides?: CallOverrides): Promise<void>;
+
+    withdrawFor(user: string, overrides?: CallOverrides): Promise<void>;
 
     withdrawnForEdition(
       arg0: BigNumberish,
@@ -557,13 +577,15 @@ export class Editions extends BaseContract {
     EditionCreated(
       quantity?: null,
       price?: null,
+      commissionPrice?: null,
       fundingRecipient?: null,
       editionId?: BigNumberish | null
     ): TypedEventFilter<
-      [BigNumber, BigNumber, string, BigNumber],
+      [BigNumber, BigNumber, BigNumber, string, BigNumber],
       {
         quantity: BigNumber;
         price: BigNumber;
+        commissionPrice: BigNumber;
         fundingRecipient: string;
         editionId: BigNumber;
       }
@@ -573,14 +595,16 @@ export class Editions extends BaseContract {
       editionId?: BigNumberish | null,
       tokenId?: BigNumberish | null,
       numSold?: null,
-      buyer?: string | null
+      buyer?: string | null,
+      referrer?: null
     ): TypedEventFilter<
-      [BigNumber, BigNumber, BigNumber, string],
+      [BigNumber, BigNumber, BigNumber, string, string],
       {
         editionId: BigNumber;
         tokenId: BigNumber;
         numSold: BigNumber;
         buyer: string;
+        referrer: string;
       }
     >;
 
@@ -591,6 +615,22 @@ export class Editions extends BaseContract {
     ): TypedEventFilter<
       [string, string, BigNumber],
       { from: string; to: string; tokenId: BigNumber }
+    >;
+
+    WithdrawPending(
+      user?: string | null,
+      amount?: null
+    ): TypedEventFilter<
+      [string, BigNumber],
+      { user: string; amount: BigNumber }
+    >;
+
+    Withdrawal(
+      user?: string | null,
+      amount?: null
+    ): TypedEventFilter<
+      [string, BigNumber],
+      { user: string; amount: BigNumber }
     >;
   };
 
@@ -605,6 +645,7 @@ export class Editions extends BaseContract {
 
     buyEdition(
       editionId: BigNumberish,
+      curator: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -613,6 +654,7 @@ export class Editions extends BaseContract {
     createEdition(
       quantity: BigNumberish,
       price: BigNumberish,
+      commissionPrice: BigNumberish,
       fundingRecipient: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -682,8 +724,12 @@ export class Editions extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    withdrawFunds(
-      editionId: BigNumberish,
+    withdraw(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    withdrawFor(
+      user: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -707,6 +753,7 @@ export class Editions extends BaseContract {
 
     buyEdition(
       editionId: BigNumberish,
+      curator: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -715,6 +762,7 @@ export class Editions extends BaseContract {
     createEdition(
       quantity: BigNumberish,
       price: BigNumberish,
+      commissionPrice: BigNumberish,
       fundingRecipient: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
@@ -787,8 +835,12 @@ export class Editions extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    withdrawFunds(
-      editionId: BigNumberish,
+    withdraw(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    withdrawFor(
+      user: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

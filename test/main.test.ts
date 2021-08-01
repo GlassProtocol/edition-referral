@@ -4,19 +4,19 @@ import { BigNumber } from "ethers";
 
 import scenarios from "./scenarios.json";
 
-const name = "Mirror Editions";
-const symbol = "EDITIONS";
+const name = "Referral Editions";
+const symbol = "REFERRAL";
 
 const { provider } = waffle;
 
 const baseURI = "https://mirror-api.com/editions/";
 const deployEditions = async () => {
-  const Editions = await ethers.getContractFactory("Editions");
+  const Editions = await ethers.getContractFactory("ReferralEditions");
   const editions = await Editions.deploy(baseURI);
   return await editions.deployed();
 };
 
-describe("Editions", () => {
+describe("Referral Editions", () => {
   describe("editions deployment", () => {
     let minter, purchaser, receiver, fundingRecipient, editionsContract;
 

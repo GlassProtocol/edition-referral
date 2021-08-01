@@ -1,13 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 import {ERC721} from "./ERC721.sol";
+
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
+
+
 
 /**
  * @title Editions
  * @author MirrorXYZ
  */
-contract ReferralEditions is ERC721 {
+contract ReferralEditions is ERC721, ReentrancyGuard {
+
+    using Address for address payable;
+    using SafeMath for uint256;
+
+
     // ============ Constants ============
 
     string public constant name = "Referral Editions";
@@ -47,6 +59,10 @@ contract ReferralEditions is ERC721 {
     // Editions start at 1, in order that unsold tokens don't map to the first edition.
     uint256 private nextEditionId = 1;
 
+    // fallback for send failure
+    mapping(address => uint256) private pendingWithdrawals;
+
+
     // ============ Events ============
 
     event EditionCreated(
@@ -65,8 +81,11 @@ contract ReferralEditions is ERC721 {
         // The account that paid for and received the NFT.
         address indexed buyer,
         // The account that referred the buyer.
-        address indexed referrer
+        address referrer
     );
+
+    event WithdrawPending(address indexed user, uint256 amount);
+    event Withdrawal(address indexed user, uint256 amount);
 
     // ============ Constructor ============
 
@@ -99,7 +118,7 @@ contract ReferralEditions is ERC721 {
         nextEditionId++;
     }
 
-    function buyEdition(uint256 editionId) external payable {
+    function buyEdition(uint256 editionId, address curator) external payable {
         // Check that the edition exists. Note: this is redundant
         // with the next check, but it is useful for clearer error messaging.
         require(editions[editionId].quantity > 0, "Edition does not exist");
@@ -113,6 +132,25 @@ contract ReferralEditions is ERC721 {
             msg.value == editions[editionId].price,
             "Must send enough to purchase the edition."
         );
+
+        if (curator != address(0)) {
+            uint256 recipientAmount = editions[editionId].price.sub(editions[editionId].commissionPrice);
+            _sendValueWithFallbackWithdrawWithLowGasLimit(
+                editions[editionId].fundingRecipient,
+                recipientAmount
+            );
+
+            _sendValueWithFallbackWithdrawWithMediumGasLimit(
+                payable(curator),
+                editions[editionId].commissionPrice
+            );
+        } else {
+            _sendValueWithFallbackWithdrawWithLowGasLimit(
+                editions[editionId].fundingRecipient,
+                editions[editionId].price
+            );
+        }
+
         // Increment the number of tokens sold for this edition.
         editions[editionId].numSold++;
         // Mint a new token for the sender, using the `nextTokenId`.
@@ -124,7 +162,8 @@ contract ReferralEditions is ERC721 {
             editionId,
             nextTokenId,
             editions[editionId].numSold,
-            msg.sender
+            msg.sender,
+            curator
         );
 
         nextTokenId++;
@@ -132,18 +171,16 @@ contract ReferralEditions is ERC721 {
 
     // ============ Operational Methods ============
 
-    function withdrawFunds(uint256 editionId) external {
-        // Compute the amount available for withdrawing from this edition.
-        uint256 remainingForEdition =
-            // Compute total amount of revenue that has been generated for the edition so far.
-            (editions[editionId].price * editions[editionId].numSold) -
-                // Subtract the amount that has already been withdrawn.
-                withdrawnForEdition[editionId];
+    function withdraw() public {
+        withdrawFor(msg.sender);
+    }
 
-        // Update that amount that has already been withdrawn for the edition.
-        withdrawnForEdition[editionId] += remainingForEdition;
-        // Send the amount that was remaining for the edition, to the funding recipient.
-        _sendFunds(editions[editionId].fundingRecipient, remainingForEdition);
+    function withdrawFor(address user) public nonReentrant {
+        uint256 amount = pendingWithdrawals[user];
+        require(amount > 0, "No funds are pending withdrawal");
+        pendingWithdrawals[user] = 0;
+        payable(user).sendValue(amount);
+        emit Withdrawal(user, amount);
     }
 
     // ============ NFT Methods ============
@@ -177,15 +214,51 @@ contract ReferralEditions is ERC721 {
 
     // ============ Private Methods ============
 
-    function _sendFunds(address payable recipient, uint256 amount) private {
-        require(
-            address(this).balance >= amount,
-            "Insufficient balance for send"
-        );
-
-        (bool success, ) = recipient.call{value: amount}("");
-        require(success, "Unable to send value: recipient may have reverted");
+        /**
+     * @dev Attempt to send a user or contract ETH and if it fails store the amount owned for later withdrawal.
+     */
+    function _sendValueWithFallbackWithdraw(
+        address payable user,
+        uint256 amount,
+        uint256 gasLimit
+    ) private {
+        if (amount == 0) {
+            return;
+        }
+        // Cap the gas to prevent consuming all available gas to block a tx from completing successfully
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = user.call{value: amount, gas: gasLimit}("");
+        if (!success) {
+            // Record failed sends for a withdrawal later
+            // Transfers could fail if sent to a multisig with non-trivial receiver logic
+            // solhint-disable-next-line reentrancy
+            pendingWithdrawals[user] = pendingWithdrawals[user].add(amount);
+            emit WithdrawPending(user, amount);
+        }
     }
+
+    /**
+     * @dev Attempt to send a user ETH with a reasonably low gas limit of 20k,
+     * which is enough to send to contracts as well.
+     */
+    function _sendValueWithFallbackWithdrawWithLowGasLimit(
+        address payable user,
+        uint256 amount
+    ) internal {
+        _sendValueWithFallbackWithdraw(user, amount, 20000);
+    }
+
+    /**
+     * @dev Attempt to send a user or contract ETH with a moderate gas limit of 90k,
+     * which is enough for a 5-way split.
+     */
+    function _sendValueWithFallbackWithdrawWithMediumGasLimit(
+        address payable user,
+        uint256 amount
+    ) internal {
+        _sendValueWithFallbackWithdraw(user, amount, 210000);
+    }
+
 
     // From https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Strings.sol
     function _toString(uint256 value) internal pure returns (string memory) {
