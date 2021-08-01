@@ -7,11 +7,11 @@ import {ERC721} from "./ERC721.sol";
  * @title Editions
  * @author MirrorXYZ
  */
-contract Editions is ERC721 {
+contract ReferralEditions is ERC721 {
     // ============ Constants ============
 
-    string public constant name = "Mirror Editions";
-    string public constant symbol = "EDITIONS";
+    string public constant name = "Referral Editions";
+    string public constant symbol = "REFERRAL";
 
     // ============ Structs ============
 
@@ -20,6 +20,8 @@ contract Editions is ERC721 {
         uint256 quantity;
         // The price at which each token will be sold, in ETH.
         uint256 price;
+        // The amount paid to the referrer (cannot be larger than price)
+        uint256 commissionPrice;
         // The account that will receive sales revenue.
         address payable fundingRecipient;
         // The number of tokens sold so far.
@@ -50,6 +52,7 @@ contract Editions is ERC721 {
     event EditionCreated(
         uint256 quantity,
         uint256 price,
+        uint256 commissionPrice,
         address fundingRecipient,
         uint256 indexed editionId
     );
@@ -60,7 +63,9 @@ contract Editions is ERC721 {
         // `numSold` at time of purchase represents the "serial number" of the NFT.
         uint256 numSold,
         // The account that paid for and received the NFT.
-        address indexed buyer
+        address indexed buyer,
+        // The account that referred the buyer.
+        address indexed referrer
     );
 
     // ============ Constructor ============
@@ -76,18 +81,21 @@ contract Editions is ERC721 {
         uint256 quantity,
         // The price to purchase a token.
         uint256 price,
+        // The amount paid to the referrer (cannot be larger than price)
+        uint256 commissionPrice,
         // The account that should receive the revenue.
         address payable fundingRecipient
     ) external {
+        require(price >= commissionPrice, "ReferralEditions: the price must be greater than or equal to commission price");
         editions[nextEditionId] = Edition({
             quantity: quantity,
             price: price,
+            commissionPrice: commissionPrice,
             fundingRecipient: fundingRecipient,
             numSold: 0
         });
 
-        emit EditionCreated(quantity, price, fundingRecipient, nextEditionId);
-
+        emit EditionCreated(quantity, price, commissionPrice, fundingRecipient, nextEditionId);
         nextEditionId++;
     }
 
