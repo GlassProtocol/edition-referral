@@ -25,7 +25,7 @@ async function main() {
   console.log(`Deploying to ${networkName}`);
   console.log({ baseURI: baseURI[networkName] });
 
-  const Editions = await ethers.getContractFactory("Editions");
+  const Editions = await ethers.getContractFactory("ReferralEditions");
   const editions = await Editions.deploy(baseURI[networkName]);
   await editions.deployed();
 
