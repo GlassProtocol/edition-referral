@@ -10,12 +10,6 @@ const NETWORK_MAP = {
 
 let isLocal = false;
 
-const baseURI = {
-  hardhat: "https://staging.mirror-api.com/",
-  rinkeby: "https://staging.mirror-api.com/editions/",
-  mainnet: "https://mirror-api.com/editions/",
-};
-
 async function main() {
   const chainId = (await waffle.provider.getNetwork()).chainId;
 
@@ -23,10 +17,9 @@ async function main() {
   const networkName = NETWORK_MAP[chainId];
 
   console.log(`Deploying to ${networkName}`);
-  console.log({ baseURI: baseURI[networkName] });
 
   const Editions = await ethers.getContractFactory("ReferralEditions");
-  const editions = await Editions.deploy(baseURI[networkName]);
+  const editions = await Editions.deploy();
   await editions.deployed();
 
   const info = {

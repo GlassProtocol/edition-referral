@@ -1,10 +1,30 @@
 import { utils } from 'ethers';
-import { ethers } from 'hardhat'
+import { ethers, waffle } from "hardhat";
+import fs from "fs";
+
+
+const NETWORK_MAP = {
+  "1": "mainnet",
+  "4": "rinkeby",
+  "1337": "hardhat",
+  "31337": "hardhat",
+};
 
 async function main() {
+  const RECIPIENT = '0x1FD26c8990EBC58fE5968DBeF0df2D855B964A6a'
+  const TOKEN_URI = 'https://arweave.net/u65DVrZ6dpiE78n38pyAlu4kH58r5Q_fc8VZ_iqI9yc'
+
+
+  const chainId = (await waffle.provider.getNetwork()).chainId;
+  console.log({ chainId });
+  const networkName = NETWORK_MAP[chainId];
+
+  let rawdata = fs.readFileSync(`${__dirname}/../networks/${networkName}.json`);
+  let network = JSON.parse(rawdata.toString());
+  const editionAddress = network.Contracts.editions
+  
   const EditionsFactory = await ethers.getContractFactory("ReferralEditions");
-    const editions = EditionsFactory.attach('0xBB2F053175aE908B77790A2037236A971EBC8ebB');
-    console.log(editions.address)
+    const editions = EditionsFactory.attach(editionAddress);
     await editions.createEdition(
         // The number of tokens that can be minted and sold.
         10,
@@ -13,7 +33,8 @@ async function main() {
         // The amount paid to the referrer (cannot be larger than price)
         utils.parseEther('0.15'),
         // The account that should receive the revenue.
-        '0x1FD26c8990EBC58fE5968DBeF0df2D855B964A6a',
+        RECIPIENT,
+        TOKEN_URI,
     )
 }
 

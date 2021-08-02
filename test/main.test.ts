@@ -9,16 +9,15 @@ const symbol = "REFERRAL";
 
 const { provider } = waffle;
 
-const baseURI = "https://mirror-api.com/editions/";
 const deployEditions = async () => {
   const Editions = await ethers.getContractFactory("ReferralEditions");
-  const editions = await Editions.deploy(baseURI);
+  const editions = await Editions.deploy();
   return await editions.deployed();
 };
 
 describe("Referral Editions", () => {
   describe("editions deployment", () => {
-    let minter, purchaser, receiver, fundingRecipient, editionsContract;
+    let minter, purchaser, receiver, fundingRecipient, curator, editionsContract;
 
     beforeEach(async () => {
       [
@@ -26,6 +25,7 @@ describe("Referral Editions", () => {
         purchaser,
         receiver,
         fundingRecipient,
+        curator,
       ] = await ethers.getSigners();
 
       editionsContract = await deployEditions();
@@ -36,13 +36,9 @@ describe("Referral Editions", () => {
       expect(await editionsContract.symbol()).to.eq(symbol);
     });
 
-    it("has a contract URI", async () => {
-      const contractURI = await editionsContract.contractURI();
-      expect(contractURI).to.eq("https://mirror-api.com/editions/metadata");
-    });
 
     for (let x = 0; x < scenarios.length; x++) {
-      const { quantity, price, editionId, buyEdition } = scenarios[x];
+      const { quantity, price, commissionPrice, editionId, buyEdition, tokenURI } = scenarios[x];
 
       describe("create edition", () => {
         describe(`when ${quantity} are sold for ${price}`, async () => {
@@ -55,7 +51,9 @@ describe("Referral Editions", () => {
             createEditionTx = await editionsContract.createEdition(
               BigNumber.from(quantity), // quantity
               BigNumber.from(price), // price,
-              fundingRecipient.address // fundingRecipient
+              BigNumber.from(commissionPrice),
+              fundingRecipient.address, // fundingRecipient
+              tokenURI
             );
 
             const editionReceipt = await createEditionTx.wait();
@@ -147,14 +145,14 @@ describe("Referral Editions", () => {
                     for (let l = 0; l < buyEdition[i].revertsOn; l++) {
                       editionsContract
                         .connect(purchaser)
-                        .buyEdition(BigNumber.from(editionId), {
+                        .buyEdition(BigNumber.from(editionId), curator.address, {
                           value: BigNumber.from(price),
                         });
                     }
 
                     const tx = editionsContract
                       .connect(purchaser)
-                      .buyEdition(BigNumber.from(editionId), {
+                      .buyEdition(BigNumber.from(editionId), curator.address, {
                         value: BigNumber.from(price),
                       });
                     await expect(tx).to.be.revertedWith(revertMessage);
@@ -164,7 +162,7 @@ describe("Referral Editions", () => {
                     for (let y = 0; y <= i; y++) {
                       tx = await editionsContract
                         .connect(purchaser)
-                        .buyEdition(BigNumber.from(editionId), {
+                        .buyEdition(BigNumber.from(editionId), curator.address, {
                           value: BigNumber.from(price),
                         });
                     }
@@ -197,87 +195,24 @@ describe("Referral Editions", () => {
                   });
 
                   it("increments the balance of the contract", async () => {
-                    const balance = await provider.getBalance(
-                      editionsContract.address
+
+
+                    const recipientBalance = await provider.getBalance(
+                      fundingRecipient.address
                     );
 
-                    expect(balance.toString()).to.eq(revenue.toString());
-                  });
+                    const curatorBalance = await provider.getBalance(
+                      curator.address
+                    );
 
-                  describe("withdraw()", () => {
-                    it("transfers funds to the fundingRecipient", async () => {
-                      const originalRecipientBalance = await provider.getBalance(
-                        fundingRecipient.address
-                      );
+                    console.log(recipientBalance.toString())
+                    console.log(curatorBalance.toString())
 
-                      await editionsContract
-                        .connect(purchaser)
-                        .withdrawFunds(editionId);
 
-                      const contractBalance = await provider.getBalance(
-                        editionsContract.address
-                      );
-                      // All the funds are extracted.
-                      expect(contractBalance.toString()).to.eq("0");
 
-                      const recipientBalance = await provider.getBalance(
-                        fundingRecipient.address
-                      );
+                    expect(recipientBalance.toString()).to.eq((BigNumber.from(price).sub(BigNumber.from(commissionPrice))).mul(BigNumber.from(numSold)).add(BigNumber.from("10000000000000000000000")));
+                    expect(curatorBalance.toString()).to.eq(BigNumber.from(commissionPrice).mul(BigNumber.from(numSold)).add(BigNumber.from("10000000000000000000000")));
 
-                      expect(recipientBalance.toString()).to.eq(
-                        originalRecipientBalance.add(revenue)
-                      );
-                    });
-
-                    describe("when called again immediately afterwards", () => {
-                      it("transfers funds to the fundingRecipient", async () => {
-                        let originalRecipientBalance = await provider.getBalance(
-                          fundingRecipient.address
-                        );
-
-                        await editionsContract
-                          .connect(purchaser)
-                          .withdrawFunds(editionId);
-
-                        let contractBalance = await provider.getBalance(
-                          editionsContract.address
-                        );
-                        // All the funds are extracted.
-                        expect(contractBalance.toString()).to.eq("0");
-
-                        let recipientBalance = await provider.getBalance(
-                          fundingRecipient.address
-                        );
-
-                        expect(recipientBalance.toString()).to.eq(
-                          originalRecipientBalance.add(revenue)
-                        );
-
-                        // Called twice!
-                        await editionsContract
-                          .connect(purchaser)
-                          .withdrawFunds(editionId);
-
-                        originalRecipientBalance = await provider.getBalance(
-                          fundingRecipient.address
-                        );
-
-                        contractBalance = await provider.getBalance(
-                          editionsContract.address
-                        );
-                        // All the funds are still extracted.
-                        expect(contractBalance.toString()).to.eq("0");
-
-                        recipientBalance = await provider.getBalance(
-                          fundingRecipient.address
-                        );
-
-                        expect(recipientBalance.toString()).to.eq(
-                          // The balance is unchanged.
-                          originalRecipientBalance
-                        );
-                      });
-                    });
                   });
 
                   describe("check ERC721 functions after minting", () => {
@@ -301,7 +236,7 @@ describe("Referral Editions", () => {
                       it("returns a valid URI", async () => {
                         const resp = await editionsContract.tokenURI(tokenId);
 
-                        expect(resp).to.eq(`${baseURI}${editionId}/${tokenId}`);
+                        expect(resp).to.eq(tokenURI);
                       });
                     });
 

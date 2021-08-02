@@ -1,8 +1,10 @@
 [
   {
     "price": "100",
+    "commissionPrice": "100",
     "quantity": "100",
     "editionId": "1",
+    "tokenURI": "test",
     "buyEdition": [
       {
         "reverts": false,
@@ -46,8 +48,10 @@
   },
   {
     "price": "100",
+    "commissionPrice": "100",
     "quantity": "1",
     "editionId": "1",
+    "tokenURI": "test",
     "buyEdition": [
       {
         "reverts": false,

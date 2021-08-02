@@ -38,6 +38,8 @@ contract ReferralEditions is ERC721, ReentrancyGuard {
         address payable fundingRecipient;
         // The number of tokens sold so far.
         uint256 numSold;
+
+        string tokenURI;
     }
 
     // ============ Immutable Storage ============
@@ -89,9 +91,7 @@ contract ReferralEditions is ERC721, ReentrancyGuard {
 
     // ============ Constructor ============
 
-    constructor(string memory baseURI_) {
-        baseURI = baseURI_;
-    }
+    constructor() {}
 
     // ============ Edition Methods ============
 
@@ -103,7 +103,9 @@ contract ReferralEditions is ERC721, ReentrancyGuard {
         // The amount paid to the referrer (cannot be larger than price)
         uint256 commissionPrice,
         // The account that should receive the revenue.
-        address payable fundingRecipient
+        address payable fundingRecipient,
+        // tokenURI
+        string memory _tokenURI
     ) external {
         require(price >= commissionPrice, "ReferralEditions: the price must be greater than or equal to commission price");
         editions[nextEditionId] = Edition({
@@ -111,7 +113,8 @@ contract ReferralEditions is ERC721, ReentrancyGuard {
             price: price,
             commissionPrice: commissionPrice,
             fundingRecipient: fundingRecipient,
-            numSold: 0
+            numSold: 0,
+            tokenURI: _tokenURI
         });
 
         emit EditionCreated(quantity, price, commissionPrice, fundingRecipient, nextEditionId);
@@ -122,6 +125,8 @@ contract ReferralEditions is ERC721, ReentrancyGuard {
         // Check that the edition exists. Note: this is redundant
         // with the next check, but it is useful for clearer error messaging.
         require(editions[editionId].quantity > 0, "Edition does not exist");
+        require(msg.sender != curator, "Cannot refer edition to yourself");
+
         // Check that there are still tokens available to purchase.
         require(
             editions[editionId].numSold < editions[editionId].quantity,
@@ -185,7 +190,7 @@ contract ReferralEditions is ERC721, ReentrancyGuard {
 
     // ============ NFT Methods ============
 
-    // Returns e.g. https://mirror-api.com/editions/[editionId]/[tokenId]
+        // Returns e.g. https://mirror-api.com/editions/[editionId]/[tokenId]
     function tokenURI(uint256 tokenId)
         public
         view
@@ -195,22 +200,9 @@ contract ReferralEditions is ERC721, ReentrancyGuard {
         // If the token does not map to an edition, it'll be 0.
         require(tokenToEdition[tokenId] > 0, "Token has not been sold yet");
         // Concatenate the components, baseURI, editionId and tokenId, to create URI.
-        return
-            string(
-                abi.encodePacked(
-                    baseURI,
-                    _toString(tokenToEdition[tokenId]),
-                    "/",
-                    _toString(tokenId)
-                )
-            );
+        return editions[tokenToEdition[tokenId]].tokenURI;
     }
 
-    // Returns e.g. https://mirror-api.com/editions/metadata
-    function contractURI() public view returns (string memory) {
-        // Concatenate the components, baseURI, editionId and tokenId, to create URI.
-        return string(abi.encodePacked(baseURI, "metadata"));
-    }
 
     // ============ Private Methods ============
 
