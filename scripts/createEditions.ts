@@ -11,7 +11,7 @@ const NETWORK_MAP = {
 };
 
 async function main() {
-  const RECIPIENT = '0x1FD26c8990EBC58fE5968DBeF0df2D855B964A6a'
+  const RECIPIENT = '0xDb6c1a8aF1883262aaD221A25816468ef693D4A2' // GLASS ADDR
   const TOKEN_URI = 'https://arweave.net/u65DVrZ6dpiE78n38pyAlu4kH58r5Q_fc8VZ_iqI9yc'
 
 
@@ -27,11 +27,11 @@ async function main() {
     const editions = EditionsFactory.attach(editionAddress);
     await editions.createEdition(
         // The number of tokens that can be minted and sold.
-        10,
+        25,
         // The price to purchase a token.
         utils.parseEther('0.15'),
         // The amount paid to the referrer (cannot be larger than price)
-        utils.parseEther('0.15'),
+        utils.parseEther('0.05'),
         // The account that should receive the revenue.
         RECIPIENT,
         TOKEN_URI,

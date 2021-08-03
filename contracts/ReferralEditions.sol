@@ -174,6 +174,14 @@ contract ReferralEditions is ERC721, ReentrancyGuard {
         nextTokenId++;
     }
 
+
+    function getEditionURI(uint256 editionId) public view returns (string memory) {
+        // Check that the edition exists. Note: this is redundant
+        // with the next check, but it is useful for clearer error messaging.
+        require(editions[editionId].quantity > 0, "Edition does not exist");
+        return editions[editionId].tokenURI;
+    }
+
     // ============ Operational Methods ============
 
     function withdraw() public {

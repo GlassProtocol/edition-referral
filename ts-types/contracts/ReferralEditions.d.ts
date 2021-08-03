@@ -28,6 +28,7 @@ interface ReferralEditionsInterface extends ethers.utils.Interface {
     "createEdition(uint256,uint256,uint256,address,string)": FunctionFragment;
     "editions(uint256)": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
+    "getEditionURI(uint256)": FunctionFragment;
     "isApprovedForAll(address,address)": FunctionFragment;
     "name()": FunctionFragment;
     "ownerOf(uint256)": FunctionFragment;
@@ -62,6 +63,10 @@ interface ReferralEditionsInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getApproved",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getEditionURI",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
@@ -115,6 +120,10 @@ interface ReferralEditionsInterface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "editions", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getApproved",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getEditionURI",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -260,6 +269,11 @@ export class ReferralEditions extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[string]>;
 
+    getEditionURI(
+      editionId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
     isApprovedForAll(
       owner: string,
       operator: string,
@@ -375,6 +389,11 @@ export class ReferralEditions extends BaseContract {
     overrides?: CallOverrides
   ): Promise<string>;
 
+  getEditionURI(
+    editionId: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<string>;
+
   isApprovedForAll(
     owner: string,
     operator: string,
@@ -481,6 +500,11 @@ export class ReferralEditions extends BaseContract {
 
     getApproved(
       tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<string>;
+
+    getEditionURI(
+      editionId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<string>;
 
@@ -656,6 +680,11 @@ export class ReferralEditions extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    getEditionURI(
+      editionId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     isApprovedForAll(
       owner: string,
       operator: string,
@@ -763,6 +792,11 @@ export class ReferralEditions extends BaseContract {
 
     getApproved(
       tokenId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getEditionURI(
+      editionId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
