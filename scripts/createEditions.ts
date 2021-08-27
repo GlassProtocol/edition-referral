@@ -11,8 +11,8 @@ const NETWORK_MAP = {
 };
 
 async function main() {
-  const RECIPIENT = '0xDb6c1a8aF1883262aaD221A25816468ef693D4A2' // GLASS ADDR
-  const TOKEN_URI = 'https://arweave.net/u65DVrZ6dpiE78n38pyAlu4kH58r5Q_fc8VZ_iqI9yc'
+  const RECIPIENT = '0x5f66Ce3fc08Ca73a715B4d00616DBb558975d927' // DELLY ADDR
+  const TOKEN_URI = 'ar://lagEo3gEwhfra1wEq12dDeGJIr5D0C8oybXwqBhH1vY'
 
 
   const chainId = (await waffle.provider.getNetwork()).chainId;
@@ -27,11 +27,11 @@ async function main() {
     const editions = EditionsFactory.attach(editionAddress);
     await editions.createEdition(
         // The number of tokens that can be minted and sold.
-        25,
+        27,
         // The price to purchase a token.
-        utils.parseEther('0.15'),
+        utils.parseEther('0.027'),
         // The amount paid to the referrer (cannot be larger than price)
-        utils.parseEther('0.05'),
+        utils.parseEther('0.001'),
         // The account that should receive the revenue.
         RECIPIENT,
         TOKEN_URI,

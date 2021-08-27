@@ -22,8 +22,9 @@ contract ReferralEditions is ERC721, ReentrancyGuard {
 
     // ============ Constants ============
 
-    string public constant name = "Referral Editions";
-    string public constant symbol = "REFERRAL";
+    string public constant name = "Glass Editions V1";
+    string public constant symbol = "EDITIONS";
+
 
     // ============ Structs ============
 
@@ -64,6 +65,9 @@ contract ReferralEditions is ERC721, ReentrancyGuard {
     // fallback for send failure
     mapping(address => uint256) private pendingWithdrawals;
 
+    string private _contractURI;
+
+
 
     // ============ Events ============
 
@@ -91,7 +95,10 @@ contract ReferralEditions is ERC721, ReentrancyGuard {
 
     // ============ Constructor ============
 
-    constructor() {}
+
+    constructor(string memory contractURI_) {
+        _contractURI = contractURI_;
+    }
 
     // ============ Edition Methods ============
 
@@ -209,6 +216,10 @@ contract ReferralEditions is ERC721, ReentrancyGuard {
         require(tokenToEdition[tokenId] > 0, "Token has not been sold yet");
         // Concatenate the components, baseURI, editionId and tokenId, to create URI.
         return editions[tokenToEdition[tokenId]].tokenURI;
+    }
+
+    function contractURI() public view returns (string memory) {
+        return _contractURI;
     }
 
 

@@ -13,13 +13,15 @@ let isLocal = false;
 async function main() {
   const chainId = (await waffle.provider.getNetwork()).chainId;
 
+  console.log(await waffle.provider.getSigner().getAddress())
+
   console.log({ chainId });
   const networkName = NETWORK_MAP[chainId];
 
   console.log(`Deploying to ${networkName}`);
 
   const Editions = await ethers.getContractFactory("ReferralEditions");
-  const editions = await Editions.deploy();
+  const editions = await Editions.deploy("https://arweave.net/67tSLhzy-ji2Gbfoe6wujBbhkQ3jfFrThUj2Y9d8qao");
   await editions.deployed();
 
   const info = {
