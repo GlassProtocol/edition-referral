@@ -4,14 +4,14 @@ import { BigNumber } from "ethers";
 
 import scenarios from "./scenarios.json";
 
-const name = "Referral Editions";
-const symbol = "REFERRAL";
+const name = "Glass Editions";
+const symbol = "EDITIONS";
 
 const { provider } = waffle;
 
 const deployEditions = async () => {
   const Editions = await ethers.getContractFactory("ReferralEditions");
-  const editions = await Editions.deploy();
+  const editions = await Editions.deploy("https://contract-uri.xyz");
   return await editions.deployed();
 };
 
@@ -34,6 +34,11 @@ describe("Referral Editions", () => {
     it("deploys editions with basic attributes", async () => {
       expect(await editionsContract.name()).to.eq(name);
       expect(await editionsContract.symbol()).to.eq(symbol);
+    });
+
+    it("has a contract URI", async () => {
+      const contractURI = await editionsContract.contractURI();
+      expect(contractURI).to.eq("https://contract-uri.xyz");
     });
 
 

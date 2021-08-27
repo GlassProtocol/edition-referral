@@ -25,6 +25,7 @@ interface ReferralEditionsInterface extends ethers.utils.Interface {
     "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "buyEdition(uint256,address)": FunctionFragment;
+    "contractURI()": FunctionFragment;
     "createEdition(uint256,uint256,uint256,address,string)": FunctionFragment;
     "editions(uint256)": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
@@ -52,6 +53,10 @@ interface ReferralEditionsInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "buyEdition",
     values: [BigNumberish, string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "contractURI",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "createEdition",
@@ -113,6 +118,10 @@ interface ReferralEditionsInterface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "buyEdition", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "contractURI",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "createEdition",
     data: BytesLike
@@ -241,6 +250,8 @@ export class ReferralEditions extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    contractURI(overrides?: CallOverrides): Promise<[string]>;
+
     createEdition(
       quantity: BigNumberish,
       price: BigNumberish,
@@ -361,6 +372,8 @@ export class ReferralEditions extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  contractURI(overrides?: CallOverrides): Promise<string>;
+
   createEdition(
     quantity: BigNumberish,
     price: BigNumberish,
@@ -474,6 +487,8 @@ export class ReferralEditions extends BaseContract {
       curator: string,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    contractURI(overrides?: CallOverrides): Promise<string>;
 
     createEdition(
       quantity: BigNumberish,
@@ -664,6 +679,8 @@ export class ReferralEditions extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    contractURI(overrides?: CallOverrides): Promise<BigNumber>;
+
     createEdition(
       quantity: BigNumberish,
       price: BigNumberish,
@@ -775,6 +792,8 @@ export class ReferralEditions extends BaseContract {
       curator: string,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    contractURI(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     createEdition(
       quantity: BigNumberish,

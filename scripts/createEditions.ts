@@ -12,7 +12,7 @@ const NETWORK_MAP = {
 
 async function main() {
   const RECIPIENT = '0x5f66Ce3fc08Ca73a715B4d00616DBb558975d927' // DELLY ADDR
-  const TOKEN_URI = 'ar://lagEo3gEwhfra1wEq12dDeGJIr5D0C8oybXwqBhH1vY'
+  const TOKEN_URI = 'ar://jlPqgRN64nqsqX04uI0z5alJIKudGIGwEPalDsLfG6c'
 
 
   const chainId = (await waffle.provider.getNetwork()).chainId;
@@ -31,7 +31,7 @@ async function main() {
         // The price to purchase a token.
         utils.parseEther('0.027'),
         // The amount paid to the referrer (cannot be larger than price)
-        utils.parseEther('0.001'),
+        utils.parseEther('0.007'),
         // The account that should receive the revenue.
         RECIPIENT,
         TOKEN_URI,
